@@ -1,46 +1,94 @@
-# Initialize Git repository
-git init
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Hi! How can I help you?</h2>
+        <div id="chatbox"></div>
+        <input type="text" id="userInput" placeholder="Type your question...">
+        <button onclick="sendMessage()">Send</button>
+        
+        <input type="file" id="fileUpload">
+        <button onclick="uploadFile()">Upload</button>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
 
-# Add a README file
-echo "# Chatbot Project" > README.md
+/* styles.css */
+.chat-container {
+    width: 400px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    text-align: center;
+}
 
-echo "This is a chatbot project using NLP and AI technologies." >> README.md
+#chatbox {
+    height: 200px;
+    border: 1px solid #ccc;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+}
 
-git add README.md
+/* script.js */
+function sendMessage() {
+    let userInput = document.getElementById("userInput").value;
+    let chatbox = document.getElementById("chatbox");
+    
+    let userMessage = document.createElement("p");
+    userMessage.innerText = "User: " + userInput;
+    chatbox.appendChild(userMessage);
+    
+    fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: userInput })
+    })
+    .then(response => response.json())
+    .then(data => {
+        let botMessage = document.createElement("p");
+        botMessage.innerText = "Chatbot: " + data.reply;
+        chatbox.appendChild(botMessage);
+    });
+}
 
-git commit -m "Initial commit with README"
+function uploadFile() {
+    let file = document.getElementById("fileUpload").files[0];
+    let formData = new FormData();
+    formData.append("file", file);
+    
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => alert("File uploaded successfully!"));
+}
 
-# Create a .gitignore file
-echo "# Ignore system files
-.DS_Store
-*.log
-node_modules/
-__pycache__/
-.env
-" > .gitignore
+/* server.py */
+from flask import Flask, request, jsonify
 
-git add .gitignore
+app = Flask(__name__)
 
-git commit -m "Added .gitignore file"
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.json['message']
+    bot_reply = "Here is a response to: " + user_message  # Placeholder response
+    return jsonify({"reply": bot_reply})
 
-# Create project folders
-mkdir backend frontend assets
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['file']
+    file.save("uploads/" + file.filename)
+    return "File uploaded successfully"
 
-touch backend/server.py frontend/index.html
-
-echo "print('Chatbot server running')" > backend/server.py
-
-echo "<html><body><h1>Chatbot Interface</h1></body></html>" > frontend/index.html
-
-# Add all files to Git
-git add .
-git commit -m "Initial project structure"
-
-# Instructions to push to GitHub
-echo "
-To push your project to GitHub:
-1. Create a repository on GitHub.
-2. Run: git remote add origin <your-repo-url>
-3. Run: git branch -M main
-4. Run: git push -u origin main
-"
+if __name__ == '__main__':
+    app.run(debug=True)
